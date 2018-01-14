@@ -2,23 +2,21 @@ import pandas as pd
 from bokeh.io import output_file, show
 from bokeh.layouts import column, row
 from bokeh.plotting import figure
-from bokeh.models.widgets.inputs import Slider
+from bokeh.models.widgets.sliders import Slider
 import numpy as np
-import virag as v
-from pandas.io.pytables import IndexCol
-from pandas.io.tests.parser import index_col
-import pandas.io.data as web
+import util as u
+from pandas_datareader import data
 import datetime
 
-start = datetime.datetime(2008,1,1)
-end = datetime.datetime(2008,12,31)
+start = datetime.datetime(2010,1,1)
+end = datetime.datetime(2017,7,13)
 stocks = ['SPY', 'XLI', 'XLB', 'XLE', 'XLU', 'XLF', 'XLV', 'XLY', 'XLP', 'XLK']
-g=web.DataReader(stocks, 'yahoo', start, end)
+g=data.DataReader(stocks, 'google', start, end)
 price = g['Close']
 #price = pd.read_csv('F:\Stock Market\Ziggy Lines\Correlation\Including SPY.csv',encoding = 'mbcs',index_col=0)
-#v.print_stats(price)
+u.print_stats(price)
 
-w = 30 #rolling correlation window
+w = 20 #rolling correlation window
 s = 5 #SMA smoothing interval 
 lo = 60 #low correlation threshold 
 
@@ -37,7 +35,7 @@ for c1 in delta.columns:
         corr_tab[:,i] = delta[c1].rolling(window=w).corr(delta[c2])
         i += 1 
 avg_corr = pd.DataFrame(index=delta.index, columns=['Correlation'])
-avg_corr['Correlation'] = 100 * (corr_tab.sum(axis=1) - symbols) / 2 / v.pairs(symbols)
+avg_corr['Correlation'] = 100 * (corr_tab.sum(axis=1) - symbols) / 2 / u.pairs(symbols)
 avg_corr['SPY'] = spy
 avg_corr['Date'] = pd.to_datetime(avg_corr.index)
 avg_corr['Smooth SPY'] = avg_corr['SPY'].rolling(window=s).mean()
@@ -67,5 +65,6 @@ s1.quad(left=box['Date'], right=box['Right'], top=box['Top'], bottom=box['Bottom
 
 s2 = figure(plot_width=940, plot_height=150, title='Correlation', x_axis_type='datetime')
 s2.line(avg_corr['Date'], avg_corr['Smooth Corr'], line_color='blue')
+s2.line(avg_corr['Date'], lo, line_color='black')
 
 show(column(s1, s2))
